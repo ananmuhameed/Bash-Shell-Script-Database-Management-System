@@ -6,8 +6,12 @@
 DATABASES="./databases"
 mkdir -p "$DATABASES"
 
+
 # Import functions
-source ./db_operations.sh 
+source ./db_operations.sh
+source ./table_operations.sh
+source ./record_operations.sh
+
 
 while true;
 do
@@ -20,23 +24,33 @@ do
     	echo "5) Exit"
     	echo "----------------------------"
     	echo -n "Enter choice (1-5): "
-	read -n1 answer
+	read  answer
 	echo
 	case $answer in
 		1)
 			create_database
 			;;
 		2)
+
 			list_databases
 			;;
+
 		3)
-			connect_database
+			read -p "enter db you want to connect: " db
+
+			if [ -d "$DATABASES/$db" ];
+                        then
+                                tables_menu "$DATABASES/$db"
+			else
+				echo "$db not found"
+			fi
+
 			;;
 		4)
 			drop_database
 			;;
 		5)
-			echo "Exit"
+			echo "Exiting"
 			exit 0
 			;;
 		*)
