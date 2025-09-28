@@ -6,6 +6,9 @@
 DATABASES="./databases"
 mkdir -p "$DATABASES"
 
+# Import functions
+source ./db_operations.sh 
+
 while true;
 do
 	echo "Main Menu"
@@ -21,20 +24,16 @@ do
 	echo
 	case $answer in
 		1)
-			echo -n "enter database name: "
-			read db
+			create_database
 			;;
 		2)
-			echo -n "available databases: "
-			ls "$DATABASES"
+			list_databases
 			;;
 		3)
-			echo -n "enter db you want to connect: "
-			read db
+			connect_database
 			;;
 		4)
-			echo -n "enter database you want to delete: "
-			read db
+			drop_database
 			;;
 		5)
 			echo "Exit"
