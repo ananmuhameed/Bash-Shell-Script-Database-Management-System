@@ -38,10 +38,10 @@ tables_menu(){
 				select_record "$database"
 				;;
 			6)
-				delete_record
+				delete_record "$database"
 				;;
 			7)
-				update_record
+				update_record "$database"
 				;;
 			8)
 				break
