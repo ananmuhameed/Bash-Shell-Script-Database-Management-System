@@ -13,7 +13,7 @@ create_database() {
     return
   fi
   mkdir -p "$DATABASES/$db"
-  echo "Database '$db' created at $BASE_DIR/$db"
+  echo "Database '$db' created at $DATABASES/$db"
 }
 
 list_databases() {
