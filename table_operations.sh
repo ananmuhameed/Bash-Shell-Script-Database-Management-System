@@ -3,7 +3,7 @@
 # File: table_operations.sh
 # ===============================
 #
-source ./record_operations
+source ./record_operations.sh
 
 tables_menu(){
 	local database=$1
@@ -32,10 +32,10 @@ tables_menu(){
 				drop_table "$database"
 				;;
 			4)
-				insert_record
+				insert_record "$database"
 				;;
 			5)
-				select_record
+				select_record "$database"
 				;;
 			6)
 				delete_record
