@@ -6,6 +6,10 @@
 DATABASES="./databases"
 mkdir -p "$DATABASES"
 
+source ./db_operations.sh
+source ./table_operations.sh
+source ./record_operations.sh
+
 while true;
 do
 	echo "Main Menu"
@@ -17,7 +21,7 @@ do
     	echo "5) Exit"
     	echo "----------------------------"
     	echo -n "Enter choice (1-5): "
-	read -n1 answer
+	read  answer
 	echo
 	case $answer in
 		1)
@@ -25,19 +29,25 @@ do
 			read db
 			;;
 		2)
-			echo -n "available databases: "
+			echo "available databases: "
 			ls "$DATABASES"
 			;;
 		3)
-			echo -n "enter db you want to connect: "
-			read db
+			read -p "enter db you want to connect: " db
+
+			if [ -d "$DATABASES/$db" ];
+                        then
+                                tables_menu "$DATABASES/$db"
+			else
+				echo "$db not found"
+			fi
 			;;
 		4)
 			echo -n "enter database you want to delete: "
 			read db
 			;;
 		5)
-			echo "Exit"
+			echo "Exiting"
 			exit 0
 			;;
 		*)
