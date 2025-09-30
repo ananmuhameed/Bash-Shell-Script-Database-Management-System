@@ -53,10 +53,12 @@ delete_record() {
     fi
 
     echo "======================="
-    cat "$database/$table"
+    header=$(head -n1 "$database/$table")
+    echo "Columns: $header"
     echo "======================="
 
-    read -p "Enter full value to delete (any row containing this will be removed): " val
+    read -p "Enter column name to delete by: " colname
+    read -p "Enter value for $colname: " val
 
     if ! grep -Fq "$val" "$database/$table"; then
         echo "Value does not exist"
@@ -66,9 +68,8 @@ delete_record() {
     grep -F -v "$val" "$database/$table" > tmp
     mv tmp "$database/$table"
 
-    echo "Rows containing '$val' deleted successfully"
+    echo "Rows containing '$val' in column '$colname' deleted successfully"
 }
-
 
 update_record() {
     local database=$1
