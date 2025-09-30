@@ -72,38 +72,28 @@ update_record() {
     fi
 
     header=$(head -n1 "$database/$table")
-    echo "Columns: $header"
-
-    read -p "Enter column name to match: " match_col
-    read -p "Enter value to match: " match_val
-    read -p "Enter column name to update: " update_col
-    read -p "Enter new value: " new_val
-
-    match_index=0
-    update_index=0
-    i=1
-    IFS=',' read -ra cols <<< "$header"
-    for col in "${cols[@]}"; do
-        if [ "$col" == "$match_col" ]; then match_index=$i; fi
-        if [ "$col" == "$update_col" ]; then update_index=$i; fi
-        i=$((i+1))
+    #echo "Columns: $header"
+	
+    IFS=',' read -a cols <<<"$header"
+    for i in "${!cols[@]}";
+    do
+	echo "$((i+1)) ${cols[$i]}"
     done
 
+    read -p "Enter ID to update (WHERE id=?): " match_id
+    read -p "Enter column number to update (SET): " update_col
+    read -p "Enter new value (SET): " new_val
 
-    tmpfile="$database/${table}.tmp"
-    while IFS= read -r line; do
-        if [ "$line" == "$header" ]; then
-            echo "$line" >> "$tmpfile"
-            continue
-        fi
+    awk -F',' -v id="$match_id" -v uc=$update_col -v nv="$new_val" '
+        NR==1 { print; next }
+        {
+            if ($1 == id) {
+                $uc = nv
+            }
+            OFS=","; print
+        }
+    ' "$database/$table" > tmpfile && mv tmpfile "$database/$table"
 
-        IFS=',' read -ra fields <<< "$line"
-        if [ "${fields[$((match_index-1))]}" == "$match_val" ]; then
-            fields[$((update_index-1))]="$new_val"
-        fi
-        (IFS=','; echo "${fields[*]}") >> "$tmpfile"
-    done < "$database/$table"
+    echo "Record with id=$match_id updated successfully!"
 
-    mv "$tmpfile" "$database/$table"
-    echo "Updated rows where $match_col=$match_val → $update_col=$new_val"
 }
