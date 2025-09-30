@@ -3,44 +3,40 @@
 # File: db_operations.sh
 # ================================
 create_database() {
-  read -rp "Database name: " db
-  if [ -z "$db" ]; then
-    echo "Aborted."
-    return
-  fi
+  db=$(zenity --entry --title="Create Database" --text="Enter database name:")
+  [ -z "$db" ] && { zenity --error --text="No name provided. Aborted."; return; }
   if [ -d "$DATABASES/$db" ]; then
-    echo "Database '$db' already exists."
+    zenity --error --text="Database '$db' already exists."
     return
   fi
   mkdir -p "$DATABASES/$db"
-  echo "Database '$db' created at $DATABASES/$db"
+  zenity --info --text="Database '$db' created at $DATABASES/$db"
 }
+
 
 list_databases() {
-  echo "Databases:"
-  local found=0
-  for d in "$DATABASES"/*; do
-    [ -d "$d" ] || continue
-    printf " - %s\n" "$(basename "$d")"
-    found=1
-  done
-  if [ "$found" -eq 0 ]; then
-    echo " (none found)"
+  dbs=$(ls -1 "$DATABASES" 2>/dev/null)
+  if [ -z "$dbs" ]; then
+    zenity --info --title="Databases" --text="(none found)"
+  else
+    zenity --list --title="Databases" --column="Database Name" $dbs
   fi
 }
 
+
 drop_database() {
-  read -rp "Drop database (name): " db
-  [ -z "$db" ] && { echo "no database name was given"; return; }
+  db=$(zenity --entry --title="Drop Database" --text="Enter database name:")
+  [ -z "$db" ] && { zenity --error --text="No name provided."; return; }
   if [ ! -d "$DATABASES/$db" ]; then
-    echo "Database '$db' not found."
+    zenity --error --text="Database '$db' not found."
     return
   fi
-  read -rp "Are you sure you want to permanently delete '$db'? Type 'yes' to confirm: " conf
-  if [ "$conf" = "yes" ]; then
+  zenity --question --title="Confirm Delete" --text="Are you sure you want to permanently delete '$db'?"
+  if [ $? -eq 0 ]; then
     rm -rf "$DATABASES/$db"
-    echo "Deleted '$db'."
+    zenity --info --text="Deleted '$db'."
   else
-    echo "Aborted."
+    zenity --info --text="Aborted."
   fi
 }
+

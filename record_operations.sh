@@ -1,56 +1,74 @@
 #!/bin/bash
-# ================================
-# File: record_operations.sh
-# ================================
-#
-insert_record(){
-	local database=$1
-	read -p "Enter Table you want to insert in: " table
-	if [ ! -f "$database/$table" ];
-	then
-		echo "Table $table does not exits"
-		return
-	fi
-	header=$(head -n1 "$database/$table")
-	echo "$header"
-	read -p "Enter values for $header (comma-separated): " values	
-	echo "$values" >> "$database/$table"
-	echo "Record inserted successfully"
-	
+
+# ===============================
+# Insert Record (GUI)
+# ===============================
+insert_record() {
+    local database=$1
+
+    table=$(zenity --entry --title="Insert Record" --text="Enter Table you want to insert in:")
+    [ -z "$table" ] && { zenity --error --text="No table provided."; return; }
+
+    if [ ! -f "$database/$table" ]; then
+        zenity --error --text="Table '$table' does not exist."
+        return
+    fi
+
+    header=$(head -n1 "$database/$table")
+    columns=$(echo "$header" | tr ',' '\n')  # split into lines for display
+    values=$(zenity --entry --title="Insert Record" --text="Columns: $header\nEnter values (comma-separated):")
+    [ -z "$values" ] && { zenity --error --text="No values provided."; return; }
+
+    echo "$values" >> "$database/$table"
+    zenity --info --text="Record inserted successfully into '$table'."
 }
-select_record(){
-	local database=$1
-        read -p "Enter Table you want to select from: " table
-        if [ ! -f "$database/$table" ];
-        then
-                echo "Table $table does not exits"
+
+# ===============================
+# Select Record (GUI)
+# ===============================
+select_record() {
+    local database=$1
+
+    table=$(zenity --entry --title="Select Record" --text="Enter Table you want to select from:")
+    [ -z "$table" ] && { zenity --error --text="No table provided."; return; }
+
+    if [ ! -f "$database/$table" ]; then
+        zenity --error --text="Table '$table' does not exist."
+        return
+    fi
+
+    header=$(head -n1 "$database/$table")
+    columns=$(echo "$header" | tr ',' '\n')
+    
+    choice=$(zenity --list --title="Select Option" --column="Option" \
+        1 "Show all records" \
+        2 "Search by column value")
+
+    case $choice in
+        1)
+            data=$(cat "$database/$table")
+            zenity --text-info --title="All Records in $table" --width=600 --height=400 --filename="$database/$table"
+            ;;
+        2)
+            IFS=',' read -a cols <<< "$header"
+            col_options=""
+            for i in "${!cols[@]}"; do
+                col_options+="$((i+1)) ${cols[$i]} "
+            done
+
+            colid=$(zenity --entry --title="Search Record" --text="Columns: $header\nEnter column number to search by:")
+            value=$(zenity --entry --title="Search Record" --text="Enter value to search for:")
+
+            if [[ -z "$colid" || -z "$value" ]]; then
+                zenity --error --text="Column or value not provided."
                 return
-        fi
+            fi
 
-	header=$(head -n1 "$database/$table")
-        #echo "Columns: $header"
-
-	echo "1) Show all records"
-        echo "2) Search by column value"
-        read -p "Choose an option: " choice
-
-	case $choice in
-        	1)
-            		echo "---- All Records ----"
-            		cat "$database/$table"
-            		;;
-		2)
-			IFS=',' read -a columns <<<"$header"
-			echo "Columns: $header"
-			for i in "${!columns[@]}";
-		       	do
-    				echo "$((i+1)) ${columns[$i]}"
-			done
-
-			read -p "Enter col id to search with: " colid
-			read -p "Enter value to search with: " value
-
-			awk -F',' -v c="$colid" -v v="$value" 'NR==1 || $c==v' 				"$database/$table"
-			;;
-	esac
+            tmpfile=$(mktemp)
+            awk -F',' -v c="$colid" -v v="$value" 'NR==1 || $c==v' "$database/$table" > "$tmpfile"
+            zenity --text-info --title="Search Results" --width=600 --height=400 --filename="$tmpfile"
+            rm -f "$tmpfile"
+            ;;
+    esac
 }
+
