@@ -42,6 +42,7 @@ select_record(){
 	esac
 }
 
+
 delete_record() {
     local database=$1
     read -p "Enter table to delete from: " table
@@ -51,10 +52,16 @@ delete_record() {
         return
     fi
 
-    header=$(head -n1 "$database/$table")
-    echo "Columns: $header"
+    echo "======================="
+    cat "$database/$table"
+    echo "======================="
 
     read -p "Enter full value to delete (any row containing this will be removed): " val
+
+    if ! grep -Fq "$val" "$database/$table"; then
+        echo "Value does not exist"
+        return
+    fi
 
     grep -F -v "$val" "$database/$table" > tmp
     mv tmp "$database/$table"
