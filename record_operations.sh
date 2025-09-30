@@ -54,3 +54,65 @@ select_record(){
 			;;
 	esac
 }
+update_record() {
+    local database=$1
+    read -p "Enter Table you want to update: " table
+    if [ ! -f "$database/$table" ]; then
+        echo "Table $table does not exist"
+        return
+    fi
+
+    header=$(head -n1 "$database/$table")
+    #echo "Columns: $header"
+
+    IFS=',' read -a cols <<<"$header"
+    for i in "${!cols[@]}";
+    do
+        echo "$((i+1)) ${cols[$i]}"
+    done
+
+    read -p "Enter ID to update (WHERE id=?): " match_id
+    read -p "Enter column number to update (SET): " update_col
+    read -p "Enter new value (SET): " new_val
+
+    awk -F',' -v id="$match_id" -v uc=$update_col -v nv="$new_val" '
+        NR==1 { print; next }
+        {
+            if ($1 == id) {
+                $uc = nv
+            }
+            OFS=","; print
+        }
+    ' "$database/$table" > tmpfile && mv tmpfile "$database/$table"
+
+    echo "Record with id=$match_id updated successfully!"
+
+}
+
+delete_record() {
+    local database=$1
+    read -p "Enter table to delete from: " table
+
+    if [ ! -f "$database/$table" ]; then
+        echo "Table $table does not exist"
+        return
+    fi
+
+    echo "======================="
+    header=$(head -n1 "$database/$table")
+    echo "Columns: $header"
+    echo "======================="
+
+    read -p "Enter column name to delete by: " colname
+    read -p "Enter value for $colname: " val
+
+    if ! grep -Fq "$val" "$database/$table"; then
+        echo "Value does not exist"
+        return
+    fi
+
+    grep -F -v "$val" "$database/$table" > tmp
+    mv tmp "$database/$table"
+
+    echo "Rows containing '$val' in column '$colname' deleted successfully"
+}
