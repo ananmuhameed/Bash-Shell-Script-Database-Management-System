@@ -39,6 +39,7 @@ tables_menu(){
 create_table(){
     local database=$1
     table=$(zenity --entry --title="Create Table" --text="Enter Table Name:")
+    table=$(echo "$table" | tr ' ' '_')
     [ -z "$table" ] && { zenity --error --text="No table name provided."; return; }
 
     if [ -f "$database/$table" ]; then

@@ -41,15 +41,15 @@ select_record() {
     columns=$(echo "$header" | tr ',' '\n')
     
     choice=$(zenity --list --title="Select Option" --column="Option" \
-        1 "Show all records" \
-        2 "Search by column value")
+        "Show all records" \
+        "Search by column value")
 
     case $choice in
-        1)
+        "Show all records")
             data=$(cat "$database/$table")
             zenity --text-info --title="All Records in $table" --width=600 --height=400 --filename="$database/$table"
             ;;
-        2)
+        "Search by column value")
             IFS=',' read -a cols <<< "$header"
             col_options=""
             for i in "${!cols[@]}"; do
