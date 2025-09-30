@@ -45,11 +45,39 @@ create_table(){
     if [ -f "$database/$table" ]; then
         zenity --error --text="Table '$table' already exists."
     else
-        columns=$(zenity --entry --title="Create Table" --text="Enter Table Columns (comma-separated):")
+        columns=$(zenity --entry --title="Create Table" \
+            --text="Enter Table Columns (comma-separated, e.g. id,name,age):")
         [ -z "$columns" ] && { zenity --error --text="No columns provided."; return; }
 
-        echo "$columns" > "$database/$table"
-        zenity --info --text="Table '$table' created successfully!"
+        IFS=',' read -ra col_array <<< "$columns"
+        schema=""
+
+        for col in "${col_array[@]}"; do
+            dtype=$(zenity --list --radiolist \
+                --title="Select Data Type" \
+                --text="Choose datatype for column: [$col]" \
+                --column="Choose" --column="Type" \
+                TRUE "INT" \
+                FALSE "TEXT" \
+                FALSE "REAL" \
+                FALSE "DATE")
+
+            [ -z "$dtype" ] && dtype="TEXT"   # default if user cancels
+            schema+="$col:$dtype,"
+        done
+
+        schema=${schema%,}  # remove trailing comma
+
+        # ✅ Ask for Primary Key
+        pk=$(zenity --list --title="Primary Key" \
+            --text="Select a column as Primary Key" \
+            --column="Column" "${col_array[@]}")
+        [ -z "$pk" ] && { zenity --error --text="No Primary Key selected."; return; }
+
+        # Append PK info at the end of schema line
+        echo "$schema|PK=$pk" > "$database/$table"
+
+        zenity --info --text="Table '$table' created with schema:\n$schema\nPrimary Key: $pk"
     fi
 }
 
