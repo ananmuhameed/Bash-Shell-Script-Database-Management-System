@@ -1,0 +1,3 @@
+id:INT,name:TEXT,age:INT|PK=id
+1,anan,25
+1,anan,30

@@ -57,13 +57,19 @@ insert_record() {
 
     record=${record%,}   # remove trailing comma
 
-    # ✅ Check PK uniqueness
-    if [ -n "$pk_col" ] && [ -n "$pk_value" ]; then
-        if awk -F',' -v col="$pk_index" -v val="$pk_value" 'NR>1 && $col==val {found=1} END{exit found}' "$database/$table"; then
-            zenity --error --text="Duplicate value '$pk_value' for Primary Key column '$pk_col'."
-            return
-        fi
+    # ✅ Check PK uniqueness (only against data rows)
+if [ -n "$pk_col" ] && [ -n "$pk_value" ]; then
+    if awk -F',' -v col="$pk_index" -v val="$pk_value" '
+        NR>1 && $col == val { exit 0 }   # found duplicate -> exit 0
+        END { exit 1 }                   # no duplicate -> exit 1
+    ' "$database/$table"; then
+        # awk exited 0 → duplicate found
+        zenity --error --text="Duplicate value '$pk_value' for Primary Key column '$pk_col'."
+        return
     fi
+fi
+
+
 
     # Insert record
     echo "$record" >> "$database/$table"
@@ -177,4 +183,52 @@ update_record() {
     zenity --info --text="Updated record where id=$match_id in $table."
 }
 
+delete_record() {
+    local database=$1
+
+    # Ask user to select table
+    table=$(zenity --entry --title="Delete Record" --text="Enter table name:")
+    [ -z "$table" ] && return
+
+    if [ ! -f "$database/$table" ]; then
+        zenity --error --text="Table '$table' does not exist."
+        return
+    fi
+
+    # Show table header (columns)
+    header=$(head -n1 "$database/$table")
+    IFS=',' read -r -a columns <<< "$header"
+
+    # Choose column
+    colname=$(zenity --list --title="Choose Column" \
+        --column="Columns" "${columns[@]}")
+    [ -z "$colname" ] && return
+
+    # Ask for value
+    val=$(zenity --entry --title="Delete Record" --text="Enter value for column '$colname':")
+    [ -z "$val" ] && return
+
+    # Check if value exists
+    if ! awk -F',' -v colname="$colname" -v val="$val" '
+        NR==1 {
+            for (i=1; i<=NF; i++) if ($i==colname) col=i
+        }
+        NR>1 && $col==val {found=1}
+        END {exit !found}
+    ' "$database/$table"; then
+        zenity --error --text="No record found with $colname=$val"
+        return
+    fi
+
+    # Delete rows
+    awk -F',' -v colname="$colname" -v val="$val" '
+        NR==1 {
+            for (i=1; i<=NF; i++) if ($i==colname) col=i
+            print $0; next
+        }
+        $col!=val {print $0}
+    ' OFS=',' "$database/$table" > tmp && mv tmp "$database/$table"
+
+    zenity --info --text="Rows with $colname=$val deleted successfully."
+}
 
