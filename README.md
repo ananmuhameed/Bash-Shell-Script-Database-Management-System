@@ -41,6 +41,7 @@ To install Zenity on Debian/Ubuntu:
 ```bash
 sudo apt update
 sudo apt install zenity
+```
 
 ---
 
@@ -50,7 +51,7 @@ sudo apt install zenity
 ```bash
 git clone https://github.com/ananmuhameed/Bash-Shell-Script-Database-Management-System.git
 cd <Bash-Shell-Script-Database-Management-System>
-
+```
 2. **Make the main script executable**
 chmod +x dbms.sh
 
@@ -149,10 +150,11 @@ If you'd like to contribute to this project, please follow these steps:
 3. Commit your changes:
    ```bash
    git commit -m "Add new feature"
+   ```
 4. Push to the branch:
    ```bash
    git push origin feature-name
-
+   ```
 ---
 
 ## License
