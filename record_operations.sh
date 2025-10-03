@@ -15,11 +15,11 @@ insert_record() {
     fi
 
     # Read schema and PK
-    schema_line=$(head -n1 "$database/$table")   # e.g. id:INT,name:TEXT,grade:REAL|PK=id
+    schema_line=$(head -n1 "$database/$table")   # id:INT,name:TEXT,grade:REAL|PK=id
     schema=${schema_line%%|*}                    # left of '|'
     pk_col=${schema_line##*PK=}                  # right of 'PK='
 
-    IFS=',' read -ra col_defs <<< "$schema"
+    IFS=',' read -a col_defs <<< "$schema"
 
     record=""
     pk_value=""
@@ -32,7 +32,7 @@ insert_record() {
         value=$(zenity --entry --title="Insert Record" --text="Enter value for [$colname] ($coltype):")
         [ -z "$value" ] && { zenity --error --text="No value for $colname provided."; return; }
 
-        # ✅ Validate type
+        # Validate type
         case "$coltype" in
             INT)
                 [[ "$value" =~ ^[0-9]+$ ]] || { zenity --error --text="Invalid INT for $colname."; return; }
@@ -57,23 +57,46 @@ insert_record() {
 
     record=${record%,}   # remove trailing comma
 
-    # ✅ Check PK uniqueness (only against data rows)
-if [ -n "$pk_col" ] && [ -n "$pk_value" ]; then
-    if awk -F',' -v col="$pk_index" -v val="$pk_value" '
-        NR>1 && $col == val { exit 0 }   # found duplicate -> exit 0
-        END { exit 1 }                   # no duplicate -> exit 1
-    ' "$database/$table"; then
-        # awk exited 0 → duplicate found
-        zenity --error --text="Duplicate value '$pk_value' for Primary Key column '$pk_col'."
-        return
-    fi
+    # Check PK uniqueness (only against data rows)
+#if [ -n "$pk_col" ] && [ -n "$pk_value" ]; then
+#    if awk -F',' -v col="$pk_index" -v val="$pk_value" '
+#        NR>1 && $col == val { exit 0 }   # found duplicate -> exit 0
+#        END { exit 1 }                   # no duplicate -> exit 1
+#    ' "$database/$table"; then
+#        # awk exited 0 → duplicate found
+#        zenity --error --text="Duplicate value '$pk_value' for Primary Key column '$pk_col'."
+#        return
+#    fi
+#fi
+
+if awk -F',' -v col="$pk_index" -v val="$pk_value" '
+    BEGIN { found=0; }
+    NR>1 {
+        if ($col == val) {
+            print "Duplicate found at line " NR
+            found=1
+            exit   # stop reading more lines
+        }
+    }
+    END {
+        if (found) {
+            exit 0  # duplicate
+        } else {
+            print "Finished scanning, no duplicate."
+            exit 1  # no duplicate
+        }
+    }
+' "$database/$table"; then
+    echo "exit=0 → duplicate found"
+    zenity --error --text="Duplicate value '$pk_value' for Primary Key column '$pk_col'."
+else
+    echo "exit=1 → no duplicate found"
+    # Insert record ONLY when no duplicate
+    echo "$record" >> "$database/$table"
+    zenity --info --text="Record inserted successfully into '$table'."
 fi
 
 
-
-    # Insert record
-    echo "$record" >> "$database/$table"
-    zenity --info --text="Record inserted successfully into '$table'."
 }
 
 # ===============================
@@ -103,25 +126,34 @@ select_record() {
             zenity --text-info --title="All Records in $table" --width=600 --height=400 --filename="$database/$table"
             ;;
         "Search by column value")
-            IFS=',' read -a cols <<< "$header"
-            col_options=""
-            for i in "${!cols[@]}"; do
-                col_options+="$((i+1)) ${cols[$i]} "
-            done
+    IFS=',' read -a cols <<< "$header"
+    col_options=""
+    for i in "${!cols[@]}"; do
+        col_options+="$((i+1)) ${cols[$i]} "
+    done
 
-            colid=$(zenity --entry --title="Search Record" --text="Columns: $header\nEnter column number to search by:")
-            value=$(zenity --entry --title="Search Record" --text="Enter value to search for:")
+    colid=$(zenity --entry --title="Search Record" --text="Columns: $header\nEnter column number to search by:")
+    value=$(zenity --entry --title="Search Record" --text="Enter value to search for:")
 
-            if [[ -z "$colid" || -z "$value" ]]; then
-                zenity --error --text="Column or value not provided."
-                return
-            fi
+    if [[ -z "$colid" || -z "$value" ]]; then
+        zenity --error --text="Column or value not provided."
+        return
+    fi
 
-            tmpfile=$(mktemp)
-            awk -F',' -v c="$colid" -v v="$value" 'NR==1 || $c==v' "$database/$table" > "$tmpfile"
-            zenity --text-info --title="Search Results" --width=600 --height=400 --filename="$tmpfile"
-            rm -f "$tmpfile"
-            ;;
+    tmpfile=$(mktemp)
+    awk -F',' -v c="$colid" -v v="$value" 'NR==1 || $c==v' "$database/$table" > "$tmpfile"
+
+    if [[ $(wc -l < "$tmpfile") -le 1 ]]; then
+        # Only header or empty → no match found
+        zenity --error --text="No records found matching value '$value' in column '${cols[$((colid-1))]}'."
+        rm -f "$tmpfile"
+        return
+    fi
+
+    zenity --text-info --title="Search Results" --width=600 --height=400 --filename="$tmpfile"
+    rm -f "$tmpfile"
+    ;;
+
     esac
 }
 update_record() {
@@ -135,19 +167,21 @@ update_record() {
         return
     fi
 
-    # Get schema (id:INT,name:TEXT,...)
-    schema=$(head -n1 "$database/$table")
+    # Get schema and primary key
+    schema_line=$(head -n1 "$database/$table")       # e.g., id:INT,name:TEXT|PK=id
+    schema=${schema_line%%|*}                        # everything before |PK=
+    pk_col=${schema_line##*PK=}                      # primary key column name
+
     IFS=',' read -ra col_defs <<< "$schema"
 
-    # Build menu (col index + colname:type)
-    menu=()
+    # Build menu for selecting column to update
+    menu_update=()
     for i in "${!col_defs[@]}"; do
-        menu+=("$((i+1))" "${col_defs[$i]}")
+        menu_update+=("$((i+1))" "${col_defs[$i]}")
     done
 
-    # Choose column
     col_choice=$(zenity --list --title="Choose column to update" \
-        --column="Column Number" --column="Column" "${menu[@]}")
+        --column="Column Number" --column="Column" "${menu_update[@]}")
     [ -z "$col_choice" ] && { zenity --error --text="No column selected."; return; }
 
     col_index=$(echo "$col_choice" | cut -d'|' -f1)
@@ -159,7 +193,7 @@ update_record() {
     match_id=$(zenity --entry --title="Update Record" --text="Enter ID value to match (WHERE id=?):")
     [ -z "$match_id" ] && { zenity --error --text="No ID provided."; return; }
 
-    # New value
+    # Ask for new value
     new_val=$(zenity --entry --title="Update Record" --text="Enter new value for [$col_name] ($col_type):")
     [ -z "$new_val" ] && { zenity --error --text="No value provided."; return; }
 
@@ -171,17 +205,39 @@ update_record() {
         TEXT) : ;;
     esac
 
+    if [ "$col_name" == "$pk_col" ]; then
+    awk -F',' -v col="$col_index" -v val="$new_val" '
+        BEGIN { found=0; print "[DEBUG] Checking PK duplicates for value=" val " in column=" col }
+        NR>1 {
+            print "[DEBUG] Line " NR " → " $col
+            if ($col == val) { print "[DEBUG] Duplicate found at line " NR; found=1 }
+        }
+        END {
+            if (found) exit 0
+            else exit 1
+        }
+    ' "$database/$table"
+    if [ $? -eq 0 ]; then
+        zenity --error --text="Duplicate value '$new_val' for primary key '$pk_col'. Update aborted."
+        return
+    fi
+fi
+
+
     # Apply update
     awk -F',' -v id="$match_id" -v col="$col_index" -v val="$new_val" '
+        BEGIN { OFS="," }
         NR==1 { print; next }
         {
             if ($1 == id) $col = val
-            OFS=","; print
+            print
         }
     ' "$database/$table" > tmpfile && mv tmpfile "$database/$table"
 
     zenity --info --text="Updated record where id=$match_id in $table."
 }
+
+
 
 delete_record() {
     local database=$1

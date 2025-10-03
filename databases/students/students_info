@@ -1,5 +1,3 @@
-id,name,grade
-1,anan,F
-2,mohamed,F
-3,sohila,F
-5,mohamed,D
+id:INT,name:TEXT,grade:INT|PK=id
+1,anan,95
+2,sohila,97

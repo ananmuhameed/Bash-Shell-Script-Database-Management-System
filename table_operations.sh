@@ -49,7 +49,7 @@ create_table(){
             --text="Enter Table Columns (comma-separated, e.g. id,name,age):")
         [ -z "$columns" ] && { zenity --error --text="No columns provided."; return; }
 
-        IFS=',' read -ra col_array <<< "$columns"
+        IFS=',' read -a col_array <<< "$columns"
         schema=""
 
         for col in "${col_array[@]}"; do
@@ -68,7 +68,7 @@ create_table(){
 
         schema=${schema%,}  # remove trailing comma
 
-        # ✅ Ask for Primary Key
+        #Primary Key
         pk=$(zenity --list --title="Primary Key" \
             --text="Select a column as Primary Key" \
             --column="Column" "${col_array[@]}")

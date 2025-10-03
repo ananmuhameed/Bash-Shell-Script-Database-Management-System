@@ -3,19 +3,35 @@
 # File: db_operations.sh
 # ================================
 create_database() {
-  db=$(zenity --entry --title="Create Database" --text="Enter database name:")
-  [ -z "$db" ] && { zenity --error --text="No name provided. Aborted."; return; }
-  if [ -d "$DATABASES/$db" ]; then
-    zenity --error --text="Database '$db' already exists."
-    return
-  fi
-  mkdir -p "$DATABASES/$db"
-  zenity --info --text="Database '$db' created at $DATABASES/$db"
+    db=$(zenity --entry --title="Create Database" --text="Enter database name:")
+    
+    # Check if nothing entered
+    [ -z "$db" ] && { zenity --error --text="No name provided. Aborted."; return; }
+    
+    # Check for spaces
+    if [[ "$db" =~ [[:space:]] ]]; then
+        zenity --error --text="Database name cannot contain spaces."
+        return
+    fi
+
+    # Check if database already exists
+    if [ -d "$DATABASES/$db" ]; then
+        zenity --error --text="Database '$db' already exists."
+        return
+    fi
+
+    # Create database
+    mkdir -p "$DATABASES/$db"
+    zenity --info --text="Database '$db' created at $DATABASES/$db"
 }
 
-
 list_databases() {
-  dbs=$(ls -1 "$DATABASES" 2>/dev/null)
+  if [ -d "$DATABASES" ] && [ "$(ls -A "$DATABASES")" ]; then
+    	dbs=$(ls -1 "$DATABASES")
+  else
+    	dbs=""
+  fi
+
   if [ -z "$dbs" ]; then
     zenity --info --title="Databases" --text="(none found)"
   else
