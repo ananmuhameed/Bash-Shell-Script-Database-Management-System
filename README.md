@@ -12,12 +12,10 @@ This project allows creating databases, tables, and performing basic CRUD operat
     - [Main Menu](#main-menu)  
     - [Database Operations](#database-operations)  
     - [Table Operations](#table-operations)  
-4. [Data Validation](#data-validation)  
-5. [Example Screenshots](#example-screenshots)  
-6. [Notes & Limitations](#notes--limitations)  
-7. [Folder Structure](#folder-structure)  
-8. [Contributing](#contributing)  
-9. [License](#license)  
+4. [Example Screenshots](#screenshots)  
+5. [Notes & Limitations](#notes--limitations)  
+6. [Contributing](#contributing)  
+7. [License](#license)  
 
 ---
 
