@@ -49,8 +49,8 @@ sudo apt install zenity
 1. **Clone the repository**
 
 ```bash
-git clone https://github.com/ananmuhameed/Bash-Shell-Script-Database-Management-System.git
-cd <Bash-Shell-Script-Database-Management-System>
+git clone https://github.com/ananmuhameed/bash-db-manager.git
+cd bash-db-manager
 ```
 2. **Make the main script executable**
    
