@@ -53,11 +53,14 @@ git clone https://github.com/ananmuhameed/Bash-Shell-Script-Database-Management-
 cd <Bash-Shell-Script-Database-Management-System>
 ```
 2. **Make the main script executable**
-chmod +x dbms.sh
-
-2. **Run the script**
-./dbms.sh
-
+   
+   ```bash
+   chmod +x dbms.sh
+   ```
+3. **Run the script**
+   ```bash
+   ./dbms.sh
+   ```
 ---
 
 ## Usage Guide
@@ -124,18 +127,6 @@ Once inside a database, you can:
 - Column names with spaces are automatically converted to underscores (`_`).  
 - Search and update operations are case-sensitive.  
 - Designed for single-user, local usage, not for concurrent multi-user environments.
-
----
-
-## Project Structure
-
-/databases/        # All databases are stored here
-    /<database>/
-        table1     # Tables as plain text files
-        table2
-dbms.sh            # Main script to run
-screenshots/       # Screenshots for README
-README.md          # Project documentation
 
 ---
 
