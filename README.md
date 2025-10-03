@@ -10,8 +10,7 @@ This project allows creating databases, tables, and performing basic CRUD operat
 2. [Installation](#installation)  
 3. [Usage Guide](#usage-guide)  
     - [Main Menu](#main-menu)  
-    - [Database Operations](#database-operations)  
-    - [Table Operations](#table-operations)  
+    - [Table Operations](#table-menu)  
 4. [Example Screenshots](#screenshots)  
 5. [Notes & Limitations](#notes--limitations)  
 6. [Contributing](#contributing)  
@@ -95,7 +94,7 @@ Once inside a database, you can:
   - If no records match the search, an error is shown  
 
 - **Update Table**  
-  - Choose a column to update (**Primary Key cannot be updated**)  
+  - Choose a column to update  
   - Choose a column to match the record(s) to update  
   - Validate new value type  
   - Primary Key uniqueness is checked if updating a PK column  
